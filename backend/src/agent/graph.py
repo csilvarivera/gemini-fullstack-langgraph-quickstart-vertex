@@ -23,7 +23,7 @@ from agent.prompts import (
     reflection_instructions,
     answer_instructions,
 )
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_google_vertexai import ChatVertexAI as ChatGoogleGenerativeAI
 from agent.utils import (
     get_citations,
     get_research_topic,
@@ -33,12 +33,11 @@ from agent.utils import (
 
 load_dotenv()
 
-if os.getenv("GEMINI_API_KEY") is None:
-    raise ValueError("GEMINI_API_KEY is not set")
-
-# Used for Google Search API
-genai_client = Client(api_key=os.getenv("GEMINI_API_KEY"))
-
+genai_client = Client(vertexai=os.getenv("GOOGLE_GENAI_USE_VERTEXAI"),
+                      project=os.getenv("GOOGLE_CLOUD_PROJECT"),
+                      location=os.getenv("GOOGLE_CLOUD_LOCATION"),
+                      
+                      )
 
 # Nodes
 def generate_query(state: OverallState, config: RunnableConfig) -> QueryGenerationState:
@@ -65,7 +64,6 @@ def generate_query(state: OverallState, config: RunnableConfig) -> QueryGenerati
         model=configurable.query_generator_model,
         temperature=1.0,
         max_retries=2,
-        api_key=os.getenv("GEMINI_API_KEY"),
     )
     structured_llm = llm.with_structured_output(SearchQueryList)
 
@@ -167,7 +165,6 @@ def reflection(state: OverallState, config: RunnableConfig) -> ReflectionState:
         model=reasoning_model,
         temperature=1.0,
         max_retries=2,
-        api_key=os.getenv("GEMINI_API_KEY"),
     )
     result = llm.with_structured_output(Reflection).invoke(formatted_prompt)
 
@@ -246,7 +243,7 @@ def finalize_answer(state: OverallState, config: RunnableConfig):
         model=reasoning_model,
         temperature=0,
         max_retries=2,
-        api_key=os.getenv("GEMINI_API_KEY"),
+        # api_key=os.getenv("GEMINI_API_KEY"),
     )
     result = llm.invoke(formatted_prompt)
 
